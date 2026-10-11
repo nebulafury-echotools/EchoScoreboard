@@ -167,6 +167,76 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 .feed li.goal-ev .m { font-weight: 600; }
 .feed li .m { min-width: 0; overflow-wrap: anywhere; }
 
+/* ---------- autoclip ---------- */
+.autoclip { display: grid; grid-template-columns: minmax(230px, auto) minmax(0, 1fr) minmax(220px, 340px); }
+.ac-head { display: flex; gap: 14px; align-items: center; padding: 12px 16px; border-right: 1px solid var(--line); min-width: 0; }
+.ac-title { display: grid; gap: 3px; min-width: 0; }
+.ac-title b { font: 700 14px/1 var(--f-display); letter-spacing: .22em; text-transform: uppercase; }
+.ac-title span { font: 12px var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+.ac-title span.armed { color: var(--good); }
+.ac-title span.hot { color: var(--warn); }
+.ac-controls { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: end; padding: 12px 16px 14px; position: relative; min-width: 0; }
+.field { display: grid; gap: 5px; font: 600 10px/1 var(--f-display); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.inl { display: inline-flex; align-items: center; gap: 6px; font: 12px var(--f-mono); letter-spacing: 0; text-transform: none; }
+select, input[type="number"] {
+  font: 13px var(--f-mono); color: var(--fg); background: var(--panel-2);
+  border: 1px solid var(--line-hi); padding: 6px 8px; border-radius: 0; max-width: 220px;
+}
+input[type="number"] { width: 64px; }
+select:focus-visible, input:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip span {
+  display: inline-block; padding: 7px 12px; border: 1px solid var(--line-hi); cursor: pointer;
+  font: 600 12px/1 var(--f-display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+}
+.chip input:checked + span { color: var(--bg); background: var(--fg); border-color: var(--fg); }
+.chip input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+.switch { position: relative; width: 46px; height: 26px; flex: none; }
+.switch input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.switch span { position: absolute; inset: 0; border: 1px solid var(--line-hi); background: var(--panel-2); transition: .2s; }
+.switch span::after { content: ""; position: absolute; top: 4px; left: 4px; width: 16px; height: 16px; background: var(--muted); transition: .2s; }
+.switch input:checked + span { border-color: var(--good); background: rgba(78,230,166,.12); }
+.switch input:checked + span::after { transform: translateX(20px); background: var(--good); box-shadow: 0 0 10px var(--good); }
+.switch input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+.ac-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
+.ac-bar i { display: block; height: 100%; width: 0; background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+.ac-log { list-style: none; margin: 0; padding: 8px 0; border-left: 1px solid var(--line); max-height: 118px; overflow-y: auto; font: 12px var(--f-mono); min-width: 0; }
+.ac-log li { padding: 3px 14px; display: flex; gap: 10px; min-width: 0; }
+.ac-log li .t { color: var(--muted); flex: none; }
+.ac-log li .r { color: var(--good); flex: none; text-transform: uppercase; }
+.ac-log li .r.fail { color: var(--bad); }
+.ac-log li .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-log li.empty { color: var(--muted); }
+.feed li.clip-ev .d { background: var(--good); box-shadow: 0 0 8px var(--good); }
+@media (max-width: 1100px) {
+  .autoclip { grid-template-columns: 1fr; }
+  .ac-head { border-right: 0; border-bottom: 1px solid var(--line); }
+  .ac-log { border-left: 0; border-top: 1px solid var(--line); }
+}
+
+/* ---------- MVP watch ---------- */
+.mvpw { grid-column: 1 / -1; }
+.mvp-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, rgba(255,208,74,.07), transparent 60%); }
+.mvp-top .lbl { font: 600 10px/1 var(--f-display); letter-spacing: .22em; text-transform: uppercase; color: var(--warn); }
+.mvp-top .who { font: 700 28px/1 var(--f-display); }
+.mvp-top .who.blue { color: var(--blue); } .mvp-top .who.orange { color: var(--orange); }
+.mvp-top .tot { font: 600 18px var(--f-mono); }
+.mvpw table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mvpw td { padding: 7px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.mvpw tr:last-child td { border-bottom: 0; }
+.mvpw tr.top td { background: rgba(255,208,74,.05); }
+.mvpw td.rk { width: 28px; color: var(--muted); font: 11px var(--f-mono); }
+.mvpw td.tt { width: 70px; text-align: right; font: 600 14px var(--f-mono); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; background: var(--muted); }
+.dot.blue { background: var(--blue); } .dot.orange { background: var(--orange); }
+.mchips { display: flex; gap: 6px; flex-wrap: wrap; }
+.mchips span { font: 11px var(--f-mono); padding: 3px 7px; border: 1px solid var(--line-hi); background: var(--panel-2); white-space: nowrap; }
+.mchips span i { font-style: normal; color: var(--muted); }
+.mvpw .note { padding: 10px 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+@media (max-width: 640px) { .mvpw td.hide-s { display: none; } }
+
 .foot { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .foot code { font: 12px var(--f-mono); color: var(--fg); }
 
@@ -220,6 +290,34 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
     </div>
   </section>
 
+  <section class="panel autoclip" aria-label="Autoclip">
+    <div class="ac-head">
+      <label class="switch" title="Autoclip on/off"><input type="checkbox" id="acOn"><span></span></label>
+      <div class="ac-title"><b>Autoclip</b><span id="acState">Connecting…</span></div>
+    </div>
+    <div class="ac-controls">
+      <label class="field" for="acPlayer">Track
+        <select id="acPlayer"><option value="">Me</option></select>
+      </label>
+      <div class="field">Clip on
+        <div class="chips" role="group" aria-label="Clip on">
+          <label class="chip"><input type="checkbox" id="acGoal"><span>Goal</span></label>
+          <label class="chip"><input type="checkbox" id="acSave"><span>Save</span></label>
+          <label class="chip"><input type="checkbox" id="acAssist"><span>Assist</span></label>
+        </div>
+      </div>
+      <label class="field" for="acDelay">Wait
+        <span class="inl"><input type="number" id="acDelay" min="0" max="30" step="1"> sec</span>
+      </label>
+      <label class="field" for="acKey">Medal key
+        <select id="acKey"></select>
+      </label>
+      <button id="acTest" type="button" title="Queue a clip now using the current wait and key">Test clip</button>
+      <div class="ac-bar"><i id="acBar"></i></div>
+    </div>
+    <ol class="ac-log" id="acLog"><li class="empty">No clips yet</li></ol>
+  </section>
+
   <section class="arena-row">
     <div class="panel roster blue"><h2><span>Blue roster</span><span id="cntBlue">0</span></h2><ul id="rosBlue"></ul></div>
     <div class="panel radar">
@@ -264,6 +362,12 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
       <h2><span>Match feed</span><span id="feedCount"></span></h2>
       <ol id="feed"><li><span class="t"></span><span class="d"></span><span class="m">Waiting for match data…</span></li></ol>
     </div>
+    <div class="panel mvpw">
+      <h2><span>MVP watch</span><span id="mvpCount"></span></h2>
+      <div class="mvp-top"><span class="lbl">Predicted MVP</span><span class="who" id="mvpWho">—</span><span class="tot" id="mvpTot"></span><div class="mchips" id="mvpAw"></div></div>
+      <table><tbody id="mvpRows"><tr><td class="empty">Waiting for a live match…</td></tr></tbody></table>
+      <div class="note">Prediction based on the game's award multipliers (from <code>player_rewards.json</code>), not the official MVP rule. ≈ marks derived or unreliable stats: three-pointers, bounce goals, jousts, clears, longest possession, and interceptions (the API under-reports them). Players who leave stay listed until the next match.</div>
+    </div>
   </section>
 
   <footer class="foot">
@@ -283,7 +387,7 @@ const TEAMS = ['blue', 'orange'];
 const STATUS = {
   pre_match: 'Pre-match', round_start: 'Round start', playing: 'In play', score: 'Goal!',
   round_over: 'Round over', post_match: 'Final', pre_sudden_death: 'Overtime soon',
-  sudden_death: 'Overtime', post_sudden_death: 'Final · OT',
+  sudden_death: 'Overtime', post_sudden_death: 'Final · OT', '': 'Reset',
 };
 const $ = id => document.getElementById(id);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -341,15 +445,26 @@ function detect(prev, s) {
   }
   for (const [name, { team }] of Object.entries(was)) if (!now[name]) pushEvent(`${name} left`, team);
 
-  // Throws: last_throw changes every time someone releases the disc.
+  // Throws. The game only fills last_throw for the local player's own throws, so for
+  // everyone else we estimate release speed from the disc velocity when possession ends.
+  const holderOf = x => { for (const t of [0, 1]) for (const p of players(x, t)) if (p.possession) return { name: p.name, team: TEAMS[t] }; return null; };
+  const was_h = holderOf(prev), now_h = holderOf(s);
+  const discSpeed = len(s.disc && s.disc.velocity);
+  if (was_h && !now_h && s.game_status === 'playing' && discSpeed > 4) {
+    addThrow({ total_speed: discSpeed, by: was_h.name, team: was_h.team, estimated: true, at: performance.now() });
+  }
   const lt = s.last_throw, plt = prev.last_throw;
-  if (lt && lt.total_speed > 0 && (!plt || lt.total_speed !== plt.total_speed || lt.arm_speed !== plt.arm_speed)) {
-    const by = S.lastHolder || { name: 'Unknown', team: '' };
-    const th = { ...lt, by: by.name, team: by.team };
-    S.throws.push(th);
-    if (S.throws.length > 200) S.throws.shift();
-    if (!S.best || th.total_speed > S.best.total_speed) S.best = th;
-    renderThrow(th);
+  if (lt && lt.total_speed > 0 && (!plt || lt.total_speed !== plt.total_speed || lt.speed_from_arm !== plt.speed_from_arm)) {
+    const recent = S.throws[S.throws.length - 1];
+    const me = s.client_name;
+    if (recent && recent.estimated && recent.by === me && performance.now() - recent.at < 1500) {
+      Object.assign(recent, lt, { estimated: false });   // upgrade estimate with the real breakdown
+      if (!S.best || recent.total_speed > S.best.total_speed) S.best = recent;
+      renderThrow(recent);
+    } else {
+      const team = indexPlayers(s)[me]?.team || '';
+      addThrow({ ...lt, by: me || 'You', team, estimated: false, at: performance.now() });
+    }
   }
 
   // Goals
@@ -361,6 +476,14 @@ function detect(prev, s) {
     const el = team === 'blue' ? $('tBlue') : $('tOrange');
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
   }
+}
+
+function addThrow(th) {
+  S.throws.push(th);
+  if (S.throws.length > 200) S.throws.shift();
+  if (!S.best || th.total_speed > S.best.total_speed) S.best = th;
+  renderThrow(th);
+  if (th.total_speed >= 20) pushEvent(`${th.by} launched a ${f1(th.total_speed)} m/s rocket`, th.team);
 }
 
 function ingest(s, mode) {
@@ -472,7 +595,7 @@ function renderBoard(s) {
 function renderThrow(th) {
   $('tSpeed').textContent = f1(th.total_speed);
   $('tSpeed').style.color = th.team ? COL[th.team] : '';
-  $('tBy').innerHTML = `thrown by <b>${esc(th.by)}</b>`;
+  $('tBy').innerHTML = `thrown by <b>${esc(th.by)}</b>${th.estimated ? ' · from disc speed' : ''}`;
   // Real API splits total_speed into speed_from_arm + speed_from_wrist + speed_from_movement.
   $('tArm').textContent = f1(th.speed_from_arm ?? th.arm_speed) + ' m/s';
   $('tWrist').textContent = f1(th.speed_from_wrist ?? th.wrist_speed) + ' m/s';
@@ -592,15 +715,24 @@ function frame(now) {
 }
 
 function drawPlayer(p, d, team, v, now) {
-  const [x, y] = toScreen(d.p, v);
+  // Launch tubes sit ~74 m out, well past the arena shell: pin those players to the end wall, faded.
+  const inTube = Math.abs(d.p[2]) > ARENA.L;
+  const shown = inTube ? [d.p[0], d.p[1], Math.sign(d.p[2]) * (ARENA.L + 1.5)] : d.p;
+  ctx.globalAlpha = inTube ? .35 : 1;
+  drawPlayerAt(p, d, team, v, now, shown);
+  ctx.globalAlpha = 1;
+}
+function drawPlayerAt(p, d, team, v, now, shown) {
+  const [x, y] = toScreen(shown, v);
   const r = Math.max(7, v.scale * 1.05);
   const col = COL[team];
   // facing
   let fz = S.swap ? -d.f[2] : d.f[2], fx = -d.f[0];
   const fl = Math.hypot(fz, fx) || 1;
-  ctx.strokeStyle = col; ctx.globalAlpha = .7; ctx.lineWidth = 2;
+  const baseAlpha = ctx.globalAlpha;
+  ctx.strokeStyle = col; ctx.globalAlpha = baseAlpha * .7; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(x + fz / fl * r, y + fx / fl * r); ctx.lineTo(x + fz / fl * (r + 9), y + fx / fl * (r + 9)); ctx.stroke();
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = baseAlpha;
   if (p.possession) {
     ctx.strokeStyle = COL.disc; ctx.lineWidth = 1.5; ctx.shadowColor = COL.disc; ctx.shadowBlur = 14;
     ctx.beginPath(); ctx.arc(x, y, r + 5, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0;
@@ -785,7 +917,8 @@ const Sim = (() => {
           velocity: [...p.v], stats: { ...p.stats },
         })),
       })),
-      last_throw: lastThrow ? { ...lastThrow } : null,
+      // Like the real game while spectating: last_throw stays empty, throws are inferred from the disc.
+      last_throw: null,
       last_score: lastScore ? { ...lastScore } : null,
     };
   }
@@ -804,8 +937,124 @@ setInterval(() => {
 }, 50);
 
 /* ============================================================
+   Autoclip (runs in server.mjs; this is the remote control)
+   ============================================================ */
+const AC = { st: null, fireAt: 0, total: 0, lastLogId: null, opts: '' };
+$('acKey').innerHTML = Array.from({ length: 12 }, (_, i) => `<option>F${i + 1}</option>`).join('');
+const REASON = { goal: 'goal', save: 'save', assist: 'assist', test: 'test' };
+
+async function acPoll() {
+  try {
+    const r = await fetch('/api/autoclip', { cache: 'no-store' });
+    acRender(r.ok ? await r.json() : null);
+  } catch { acRender(null); }
+  setTimeout(acPoll, 400);
+}
+async function acSet(patch) {
+  try {
+    const r = await fetch('/api/autoclip', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(patch) });
+    if (r.ok) acRender(await r.json());
+  } catch {}
+}
+
+function acRender(st) {
+  AC.st = st;
+  const stateEl = $('acState');
+  if (!st) { stateEl.textContent = 'Scoreboard server offline'; stateEl.className = ''; return; }
+  const c = st.config, focused = document.activeElement;
+  if (focused !== $('acOn')) $('acOn').checked = c.enabled;
+  $('acGoal').checked = c.events.goal; $('acSave').checked = c.events.save; $('acAssist').checked = c.events.assist;
+  if (focused !== $('acDelay')) $('acDelay').value = c.delay;
+  if (focused !== $('acKey')) $('acKey').value = c.key;
+
+  // Player list: "Me" plus everyone on a team in the live match.
+  const names = S.mode === 'live' && S.cur ? [0, 1].flatMap(t => players(S.cur, t).map(p => p.name)) : [];
+  if (c.player && !names.includes(c.player)) names.unshift(c.player);
+  const meLabel = st.tracking.isClient && st.tracking.name ? `Me (${st.tracking.name})` : 'Me';
+  const opts = [meLabel, ...names].join('|');
+  if (opts !== AC.opts && focused !== $('acPlayer')) {
+    $('acPlayer').innerHTML = `<option value="">${esc(meLabel)}</option>` + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    AC.opts = opts;
+  }
+  if (focused !== $('acPlayer')) $('acPlayer').value = c.player || '';
+
+  // Status line
+  const t = st.tracking;
+  let msg, cls = '';
+  if (st.pending) {
+    msg = `Clipping ${st.pending.reasons.join(' + ')} in ${(st.pending.fireIn / 1000).toFixed(1)}s`; cls = 'hot';
+    const fireAt = performance.now() + st.pending.fireIn;
+    if (Math.abs(fireAt - AC.fireAt) > 250) { AC.fireAt = fireAt; AC.total = Math.max(st.pending.fireIn, c.delay * 1000) || 1; }
+  } else {
+    AC.fireAt = 0;
+    if (!c.enabled) msg = 'Off';
+    else if (S.mode !== 'live') msg = 'Waiting for a live match';
+    else if (t.found) { msg = `Armed · watching ${t.name} on ${t.team}`; cls = 'armed'; }
+    else if (t.isClient) msg = `${t.name || 'You'} ${t.name ? 'is' : 'are'} spectating · arms when you join a team`;
+    else msg = `${t.name} isn't in this match`;
+  }
+  stateEl.textContent = msg; stateEl.className = cls;
+
+  // Clip log + feed
+  $('acLog').innerHTML = st.log.length ? st.log.map(e => {
+    const time = new Date(e.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return `<li><span class="t">${time}</span><span class="r ${e.ok ? '' : 'fail'}">${e.ok ? e.key : 'failed'}</span><span class="n">${esc(e.reasons.map(r => REASON[r] || r).join(' + '))} · ${esc(e.player)}</span></li>`;
+  }).join('') : '<li class="empty">No clips yet</li>';
+  const newest = st.log[0];
+  if (AC.lastLogId === null) AC.lastLogId = newest ? newest.id : 0;
+  else if (newest && newest.id > AC.lastLogId) {
+    for (const e of st.log.filter(e => e.id > AC.lastLogId).reverse()) {
+      pushEvent(e.ok ? `Autoclip pressed ${e.key} · ${e.reasons.join(' + ')} by ${e.player}` : `Autoclip failed: ${e.error}`, '', 'clip-ev');
+    }
+    AC.lastLogId = newest.id;
+  }
+}
+
+(function acTick() {
+  const bar = $('acBar');
+  if (AC.fireAt) {
+    const left = Math.max(0, AC.fireAt - performance.now());
+    bar.style.width = (100 - left / AC.total * 100).toFixed(1) + '%';
+    if (AC.st && AC.st.pending) $('acState').textContent = `Clipping ${AC.st.pending.reasons.join(' + ')} in ${(left / 1000).toFixed(1)}s`;
+  } else bar.style.width = '0';
+  requestAnimationFrame(acTick);
+})();
+
+$('acOn').addEventListener('change', e => acSet({ enabled: e.target.checked }));
+$('acGoal').addEventListener('change', e => acSet({ events: { goal: e.target.checked } }));
+$('acSave').addEventListener('change', e => acSet({ events: { save: e.target.checked } }));
+$('acAssist').addEventListener('change', e => acSet({ events: { assist: e.target.checked } }));
+$('acDelay').addEventListener('change', e => acSet({ delay: Number(e.target.value) }));
+$('acKey').addEventListener('change', e => acSet({ key: e.target.value }));
+$('acPlayer').addEventListener('change', e => { acSet({ player: e.target.value }); e.target.blur(); });
+$('acTest').addEventListener('click', async () => {
+  try { const r = await fetch('/api/autoclip/test', { method: 'POST' }); if (r.ok) acRender(await r.json()); } catch {}
+});
+
+/* ============================================================
+   MVP watch (computed in server.mjs, /api/mvp)
+   ============================================================ */
+const chipsHtml = aw => aw.length ? aw.map(a => `<span>${esc(a.label)} <i>${a.value}${a.approx ? '≈' : ''} · ${a.score}</i></span>`).join('') : '<span><i>no awards yet</i></span>';
+async function mvpPoll() {
+  try {
+    const d = await (await fetch('/api/mvp', { cache: 'no-store' })).json();
+    const m = d.mvp;
+    $('mvpWho').textContent = m ? m.name : '—'; $('mvpWho').className = 'who ' + (m ? m.team : '');
+    $('mvpTot').textContent = m ? m.total + ' pts' : '';
+    $('mvpAw').innerHTML = m ? chipsHtml(m.awards) : '';
+    $('mvpCount').textContent = d.players.length ? `${d.players.length} players` : '';
+    $('mvpRows').innerHTML = d.players.length ? d.players.map((p, i) =>
+      `<tr class="${m && p.name === m.name ? 'top' : ''}"><td class="rk">${i + 1}</td><td><span class="dot ${p.team}"></span>${esc(p.name)}</td><td class="hide-s"><div class="mchips">${chipsHtml(p.awards)}</div></td><td class="tt">${p.total}</td></tr>`).join('')
+      : '<tr><td class="empty">Waiting for a live match…</td></tr>';
+  } catch {}
+  setTimeout(mvpPoll, 700);
+}
+
+/* ============================================================
    Boot
    ============================================================ */
+acPoll();
+mvpPoll();
 updateFoot();
 poll();
 requestAnimationFrame(frame);

@@ -1,0 +1,16 @@
+{
+  "name": "echo-scoreboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Echo VR scoreboard, radar and autoclip with a game overlay",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "serve": "node server.mjs",
+    "pack": "node electron/pack.cjs"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.7.0"
+  }
+}
