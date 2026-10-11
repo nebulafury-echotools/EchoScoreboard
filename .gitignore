@@ -4,3 +4,9 @@ autoclip.json
 mvp-log.jsonl
 captures/
 probe/
+
+# Local research tools: MVP verification by OCR, rule scoring, dev config. Not part of the published app.
+mvp-verify.mjs
+tools/
+.claude/
+electron/make-icon.cjs
