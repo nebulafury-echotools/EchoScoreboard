@@ -7,10 +7,9 @@
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { createVerifier } from './mvp-verify.mjs';
 
 const ECHO_HOST = process.argv[2] || process.env.ECHO_HOST || '127.0.0.1';
 const ECHO_URL = `http://${ECHO_HOST}:6721/session`;
@@ -44,7 +43,7 @@ async function pollEcho() {
   }
   autoclip.observe(session);
   mvp.observe(session);
-  verifier.observe(session);
+  verifier?.observe(session);
   setTimeout(pollEcho, session._offline ? 1000 : 66);
 }
 
@@ -226,9 +225,14 @@ const mvp = (() => {
   return { observe, state: () => cache };
 })();
 
-/* ---------------- MVP verification ---------------- */
-// At post_match, compares the prediction with the game's real MVP (OCR) and logs it to mvp-log.jsonl. See mvp-verify.mjs.
-const verifier = createVerifier({ dataDir: DATA_DIR, awardsMeta: mvp.state().awardsMeta, getPrediction: () => mvp.state(), echoBase: `http://${ECHO_HOST}:6721` });
+/* ---------------- MVP verification (optional) ---------------- */
+// A local research tool, not part of the published app: when mvp-verify.mjs sits next to this file, it reads the
+// game's real MVP at post_match (OCR) and logs it with the prediction to mvp-log.jsonl.
+let verifier = null;
+if (existsSync(fileURLToPath(new URL('./mvp-verify.mjs', import.meta.url)))) {
+  const { createVerifier } = await import('./mvp-verify.mjs');
+  verifier = createVerifier({ dataDir: DATA_DIR, awardsMeta: mvp.state().awardsMeta, getPrediction: () => mvp.state(), echoBase: `http://${ECHO_HOST}:6721` });
+}
 
 /* ---------------- HTTP ---------------- */
 const json = (res, status, body) => {
@@ -246,7 +250,7 @@ const server = http.createServer(async (req, res) => {
   if (url === '/api/autoclip' && req.method === 'POST') { autoclip.update(await readBody(req)); return json(res, 200, autoclip.state()); }
   if (url === '/api/autoclip/test' && req.method === 'POST') { autoclip.test(); return json(res, 200, autoclip.state()); }
   if (url === '/api/mvp') return json(res, 200, mvp.state());
-  if (url === '/api/mvp-log') return json(res, 200, verifier.state());
+  if (url === '/api/mvp-log' && verifier) return json(res, 200, verifier.state());
   // Static files from public/ by name; the resolved path must stay inside it.
   let rel; try { rel = decodeURIComponent(url); } catch { return res.writeHead(400).end(); }
   if (rel === '/') rel = '/index.html';

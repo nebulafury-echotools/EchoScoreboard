@@ -1057,7 +1057,9 @@ async function mvpPoll() {
 const reasonText = { no_mvp_screen_for_spectators: 'spectators get no MVP screen', camera_not_aimed: 'could not move the spectator camera', echo_not_visible: 'Echo window not capturable', mvp_not_found_in_ocr: 'no MVP found on screen' };
 async function mvpLogPoll() {
   try {
-    const d = await (await fetch('/api/mvp-log', { cache: 'no-store' })).json(), sm = d.summary, e = d.entries[0];
+    const r = await fetch('/api/mvp-log', { cache: 'no-store' });
+    if (r.status === 404) { $('mvpVerify').style.display = 'none'; return; }   // MVP verification is a local tool, not in every build
+    const d = await r.json(), sm = d.summary, e = d.entries[0];
     let h = sm.verified ? `Verified vs game: <b>${sm.correct}/${sm.verified}</b> correct${sm.accuracy != null ? ` (${sm.accuracy}%)` : ''}` : `Verified vs game: <b>0/0</b> (${sm.matches} logged)`;
     if (e) {
       const a = e.actual || {};
