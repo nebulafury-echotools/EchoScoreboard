@@ -1,0 +1,120 @@
+{
+  "source": "player_rewards.json / echo_arena",
+  "maxawardsdisplayed": 3,
+  "xprewards": {
+    "matchcomplete": 1000,
+    "mvp": 100,
+    "win": 200,
+    "tiered": [
+      {
+        "name": "gold",
+        "xp": 150,
+        "stats": [
+          "goals",
+          "assists",
+          "saves"
+        ]
+      },
+      {
+        "name": "silver",
+        "xp": 100,
+        "stats": [
+          "goals",
+          "assists",
+          "saves"
+        ]
+      },
+      {
+        "name": "bronze",
+        "xp": 50,
+        "stats": [
+          "goals",
+          "assists",
+          "saves"
+        ]
+      }
+    ]
+  },
+  "awards": [
+    {
+      "name": "bruiser",
+      "stat": "stuns",
+      "multiplier": 5
+    },
+    {
+      "name": "long_shot",
+      "stat": "threepointgoals",
+      "multiplier": 50
+    },
+    {
+      "name": "bouncer",
+      "stat": "bouncegoals",
+      "multiplier": 30
+    },
+    {
+      "name": "thief",
+      "stat": "steals",
+      "multiplier": 20
+    },
+    {
+      "name": "team_player",
+      "stat": "assists",
+      "multiplier": 30
+    },
+    {
+      "name": "guardian",
+      "stat": "saves",
+      "multiplier": 30
+    },
+    {
+      "name": "jouster",
+      "stat": "joustswon",
+      "multiplier": 40
+    },
+    {
+      "name": "unrelenting",
+      "stat": "shotsongoal",
+      "multiplier": 10
+    },
+    {
+      "name": "unstoppable",
+      "stat": "goals",
+      "multiplier": 20
+    },
+    {
+      "name": "greedy",
+      "stat": "longestpossession",
+      "multiplier": 4
+    },
+    {
+      "name": "eagle_eye",
+      "stat": "passes",
+      "multiplier": 20
+    },
+    {
+      "name": "quick_reflexes",
+      "stat": "catches",
+      "multiplier": 30
+    },
+    {
+      "name": "long_arm",
+      "stat": "clears",
+      "multiplier": 20
+    },
+    {
+      "name": "interceptor",
+      "stat": "interceptions",
+      "multiplier": 20
+    },
+    {
+      "name": "dunker",
+      "stat": "onepointgoals",
+      "multiplier": 20
+    },
+    {
+      "name": "hat_tricker",
+      "stat": "hattricks",
+      "multiplier": 100
+    }
+  ]
+}

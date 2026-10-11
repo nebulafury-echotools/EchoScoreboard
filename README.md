@@ -27,4 +27,39 @@ It switches to real data (green **LIVE** pill) as soon as `/session` answers.
 - **Throw lab**: last throw speed with arm / wrist / movement breakdown, spin, session best, last 24 throws
 - **Match feed**: goals, saves, stuns, steals, interceptions, joins and leaves
 
-If the goals look like they're on the wrong ends, hit **Swap ends** (remembered per browser).
+- **Autoclip**: presses your Medal hotkey a few seconds after *you* score, save or assist
+
+## Autoclip
+
+Runs inside `server.mjs`, so it works even with the browser tab closed.
+
+- Watches the player in **Track** (default: you, from Echo's `client_name`).
+- When their `goals`, `saves` or `assists` stat goes up, it waits **Wait** seconds (default 5) and presses **Medal key** (default F2).
+- Several events inside one wait window (save → assist → goal) become a single clip.
+- While you're spectating it stays idle; pick another player in **Track** to try it out, then switch back to **Me**.
+- **Test clip** queues a press right now with your current settings.
+- Settings are saved to `autoclip.json` next to the server.
+
+Medal needs its clip hotkey set to the same key, and the clip length should be longer than the wait
+(e.g. 30 s) so the play itself is in the clip.
+
+## Overlay
+
+`/overlay.html` is a transparent spectator HUD meant for a click-through, always-on-top window laid over
+Echo's game window (any size, 720p to 4K). Score bar on top, rosters on the edges, a small radar bottom-left,
+the MVP card and last throw speed bottom-right, and toasts for goals and Autoclip. The centre stays clear.
+Out of a match it draws nothing except a small status chip that fades after a few seconds.
+Set `ECHO_SCOREBOARD_DATA` to a directory to keep `autoclip.json` somewhere writable.
+
+## MVP prediction
+
+`GET /api/mvp` scores every player with the game's award multipliers (`mvp-awards.json`, extracted from
+`player_rewards.json`), shows each player's top 3 awards and predicts the MVP: the top scorer on the leading team
+(overall top scorer when tied). This is a guess, not the official rule; it lives in `pickMvp()` in `server.mjs`.
+
+Some award stats aren't in the API and are derived from the stream (marked with ≈): three-point and bounce goals,
+jousts won, clears, longest possession. They only count what happened while the server was running.
+The API's `interceptions` is also marked ≈ because the game under-reports it. The dashboard shows it under **MVP watch**.
+Stats reset when the session id changes; players who leave keep their row until then.
+
+Spectating with the desktop build: `echovr.exe -spectatorstream -windowed`.
