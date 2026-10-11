@@ -14,6 +14,16 @@ Works with any server, including EchoRelay. No dependencies, just Node 18+.
 
 3. Open http://localhost:6730 and join a match.
 
+### Build the app (Windows .exe)
+
+Prefer a window instead of a browser tab? Double-click **`build.bat`**. It installs dependencies and builds
+`dist\EchoScoreboard-win32-x64\EchoScoreboard.exe`. You need [Node.js](https://nodejs.org) (LTS); the first
+build downloads Electron (~100 MB). Close a running EchoScoreboard.exe before rebuilding.
+
+Run the exe: the window shows the scoreboard, and the tray icon toggles the in-game overlay (and has
+Open dashboard / Quit). Closing the window quits the app. Start with `EchoScoreboard.exe --tray` to launch
+hidden, with only the tray icon and overlay.
+
 Playing on a Quest standalone? Pass the headset's LAN IP: `node server.mjs 192.168.1.50`
 
 Until the game is reachable, the page runs a built-in demo match (yellow **DEMO** pill).

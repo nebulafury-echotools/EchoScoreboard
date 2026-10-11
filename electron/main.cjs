@@ -1,5 +1,5 @@
-// Echo Scoreboard - Electron shell: runs server.mjs in-process, shows a click-through
-// overlay on top of Echo VR's client area, and lives in the tray.
+// Echo Scoreboard - Electron shell: runs server.mjs in-process, shows the dashboard in a
+// window, a click-through overlay on top of Echo VR's client area, and lives in the tray.
 const { app, BrowserWindow, Tray, Menu, nativeImage, screen, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
@@ -10,6 +10,7 @@ const { pathToFileURL } = require('node:url');
 const PORT = Number(process.env.PORT) || 6730;
 const BASE = `http://127.0.0.1:${PORT}`;
 const GAME_PROC = 'echovr';
+const TRAY_ONLY = process.argv.includes('--tray');
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
@@ -54,6 +55,36 @@ async function startServer() {
   const file = path.join(__dirname, '..', 'server.mjs');
   log('starting server', file, 'port', PORT, 'data', process.env.ECHO_SCOREBOARD_DATA);
   try { await import(pathToFileURL(file).href); log('server imported'); } catch (e) { log('server failed to start', e); }
+}
+
+/* ---------- main dashboard window ---------- */
+let mainWin = null;
+function createMainWindow() {
+  mainWin = new BrowserWindow({
+    width: 1440, height: 920, minWidth: 900, minHeight: 600, show: false,
+    title: 'Echo Scoreboard', backgroundColor: '#060a12', autoHideMenuBar: true,
+    icon: path.join(__dirname, 'icon.png'),
+  });
+  mainWin.once('ready-to-show', () => { if (!TRAY_ONLY && mainWin) mainWin.show(); });
+  mainWin.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url).catch(() => {}); return { action: 'deny' }; });
+  mainWin.webContents.on('will-navigate', (e, url) => {
+    if (!url.startsWith(BASE)) { e.preventDefault(); shell.openExternal(url).catch(() => {}); }
+  });
+  mainWin.on('closed', () => { mainWin = null; app.quit(); });
+  loadMain();
+}
+async function loadMain() {
+  for (let i = 0; i < 120 && mainWin; i++) {
+    if (await status('/')) break; // any answer means the server is up
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  if (!mainWin) return;
+  try { await mainWin.loadURL(`${BASE}/`); log('dashboard loaded'); } catch (e) { log('dashboard load failed', e); }
+}
+function showMain() {
+  if (!mainWin) { createMainWindow(); mainWin.once('ready-to-show', () => { mainWin?.show(); mainWin?.focus(); }); return; }
+  if (mainWin.isMinimized()) mainWin.restore();
+  mainWin.show(); mainWin.focus();
 }
 
 /* ---------- overlay window ---------- */
@@ -136,25 +167,25 @@ function createTray() {
   if (img.isEmpty()) img = nativeImage.createEmpty();
   tray = new Tray(img);
   tray.setToolTip('Echo Scoreboard');
-  const open = () => shell.openExternal(`http://localhost:${PORT}`);
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Open dashboard', click: open },
+    { label: 'Open dashboard', click: showMain },
     { label: 'Overlay', type: 'checkbox', checked: settings.overlay, click: m => { settings.overlay = m.checked; saveSettings(); if (!m.checked && overlay) { overlay.hide(); lastShown = false; } log('overlay enabled =', m.checked); } },
     { type: 'separator' },
     { label: 'Quit', click: () => app.quit() },
   ]));
-  tray.on('double-click', open);
+  tray.on('double-click', showMain);
 }
 
 if (gotLock) {
-  app.on('second-instance', () => log('second instance launched'));
-  app.on('window-all-closed', () => {}); // tray app: stay alive
+  app.on('second-instance', () => { log('second instance launched'); if (app.isReady()) showMain(); });
+  app.on('window-all-closed', () => {}); // main window 'closed' quits; overlay-only/tray mode stays alive
   app.on('before-quit', () => { log('quitting'); stopHelper(); });
   app.whenReady().then(async () => {
     loadSettings();
-    log('app ready', app.getVersion(), 'packaged', app.isPackaged);
+    log('app ready', app.getVersion(), 'packaged', app.isPackaged, TRAY_ONLY ? 'mode tray (no main window)' : 'mode window');
     createTray();
     await startServer();
+    createMainWindow();
     createOverlay();
     startHelper();
   });
