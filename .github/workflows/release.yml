@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      ZIP_NAME: EchoScoreboard-${{ github.ref_name }}-win-x64.zip
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build (build.bat)
+        shell: cmd
+        env:
+          NOPAUSE: '1'
+        run: call build.bat
+
+      - name: Verify build output
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'dist\EchoScoreboard-win32-x64\EchoScoreboard.exe')) {
+            throw 'dist\EchoScoreboard-win32-x64\EchoScoreboard.exe was not produced'
+          }
+
+      - name: Zip build
+        shell: pwsh
+        run: |
+          7z a -tzip $env:ZIP_NAME .\dist\EchoScoreboard-win32-x64
+          if ($LASTEXITCODE -ne 0) { throw "7z failed with exit code $LASTEXITCODE" }
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view $env:TAG *> $null
+          $exists = ($LASTEXITCODE -eq 0)
+          $global:LASTEXITCODE = 0
+          if ($exists) {
+            gh release upload $env:TAG $env:ZIP_NAME --clobber
+          } else {
+            gh release create $env:TAG $env:ZIP_NAME --title $env:TAG --generate-notes
+          }
+          if ($LASTEXITCODE -ne 0) { throw "gh failed with exit code $LASTEXITCODE" }
