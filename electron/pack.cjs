@@ -15,7 +15,7 @@ const fs = require('node:fs');
     asar: false,
     prune: true,
     ...(fs.existsSync(icon) ? { icon } : {}),
-    ignore: [/^\/dist($|\/)/, /^\/\.claude($|\/)/, /^\/\.git($|\/)/, /^\/\.gitattributes$/, /^\/autoclip\.json$/, /^\/README\.md$/, /^\/mvp-awards\.json\.bak$/],
+    ignore: [/^\/dist($|\/)/, /^\/\.claude($|\/)/, /^\/\.git($|\/)/, /^\/\.gitattributes$/, /^\/autoclip\.json$/, /^\/mvp-log\.jsonl$/, /^\/captures($|\/)/, /^\/probe($|\/)/, /^\/tools\/probe-/,/^\/README\.md$/, /^\/mvp-awards\.json\.bak$/],
   });
   console.log('Packaged:', out.join(', '));
 })().catch(e => { console.error(e); process.exit(1); });

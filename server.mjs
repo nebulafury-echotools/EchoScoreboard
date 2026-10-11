@@ -10,6 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { createVerifier } from './mvp-verify.mjs';
 
 const ECHO_HOST = process.argv[2] || process.env.ECHO_HOST || '127.0.0.1';
 const ECHO_URL = `http://${ECHO_HOST}:6721/session`;
@@ -43,6 +44,7 @@ async function pollEcho() {
   }
   autoclip.observe(session);
   mvp.observe(session);
+  verifier.observe(session);
   setTimeout(pollEcho, session._offline ? 1000 : 66);
 }
 
@@ -142,39 +144,47 @@ const mvp = (() => {
   const len = v => v ? Math.hypot(v[0] || 0, v[1] || 0, v[2] || 0) : 0;
   const r1 = n => Math.round(n * 10) / 10;
 
-  let sid = null, rows = new Map(), prev = null, joustPending = false, poss = null;   // poss: { name, since }
+  let sid = null, rows = new Map(), prev = null, joustPending = false, poss = null, clearCheck = null;   // poss: { name, held } (seconds of running clock)
   let cache = { sessionid: null, mvp: null, players: [], awardsMeta };
 
   const newRow = (name, team) => ({ name, team, number: null, api: {}, pos: null, d: { threepointgoals: 0, onepointgoals: 0, bouncegoals: 0, joustswon: 0, longestpossession: 0, clears: 0 } });
-  const statsOf = (r, now) => {
+  const statsOf = r => {
     const a = r.api, g = a.goals || 0;
-    const live = poss && poss.name === r.name ? (now - poss.since) / 1000 : 0;
+    const live = poss && poss.name === r.name ? poss.held : 0;
     return { stuns: a.stuns || 0, steals: a.steals || 0, assists: a.assists || 0, saves: a.saves || 0, goals: g, passes: a.passes || 0, catches: a.catches || 0,
       interceptions: a.interceptions || 0, shotsongoal: a.shots_taken || 0, ...r.d, hattricks: Math.floor(g / 3), longestpossession: r1(Math.max(r.d.longestpossession, live)) };
   };
-  const endPossession = now => {
+  const endPossession = () => {
     if (!poss) return;
-    const r = rows.get(poss.name); if (r) r.d.longestpossession = Math.max(r.d.longestpossession, (now - poss.since) / 1000);
+    const r = rows.get(poss.name); if (r) r.d.longestpossession = Math.max(r.d.longestpossession, poss.held);
     poss = null;
   };
 
-  // The exact in-game MVP rule is still being researched. Current guess: highest total on the
-  // leading team (highest overall when tied). Change only this function.
+  // Tuned against the game's MVP card (tools/mvp-rules.mjs): 28/30 matches. Highest award total, any team, without
+  // Jouster (jousts don't count toward MVP) and with interceptions doubled (the API under-reports them).
+  // Players who left still count if they were seen in the last 10 s (they often drop out at the whistle).
+  // Change only this function.
+  const mult = stat => awardsMeta.find(a => a.stat === stat)?.multiplier || 0;
+  const INTERCEPTOR = mult('interceptions'), JOUSTER = mult('joustswon');
   function pickMvp(list, s) {
-    const b = s.blue_points || 0, o = s.orange_points || 0;
-    const pool = b === o ? list : list.filter(p => p.team === (b > o ? 'blue' : 'orange'));
-    return (pool.length ? pool : list)[0] || null;   // list is sorted by total desc
+    const here = new Set([0, 1].flatMap(t => (s.teams?.[t]?.players || []).map(p => p.name)));
+    const score = p => p.total - (p.stats.joustswon || 0) * JOUSTER + (p.stats.interceptions || 0) * INTERCEPTOR;
+    const pool = list.filter(p => here.has(p.name) || p.seenAgo <= 10);
+    return (pool.length ? pool : list).slice().sort((a, b) => score(b) - score(a))[0] || null;
   }
 
   function observe(s) {
     if (s._offline || !s.teams) return;
     const now = Date.now();
-    if (s.sessionid !== sid) { sid = s.sessionid; rows = new Map(); prev = null; joustPending = false; poss = null; }
-    let cur = null, curPos = null;
+    if (s.sessionid !== sid) { sid = s.sessionid; rows = new Map(); prev = null; joustPending = false; poss = null; clearCheck = null; }
+    let cur = null, curPos = null, inHand = null, handPos = null;
     for (const t of [0, 1]) for (const p of (s.teams[t]?.players || [])) {
       let r = rows.get(p.name); if (!r) rows.set(p.name, r = newRow(p.name, 'blue'));
       r.team = t ? 'orange' : 'blue'; r.number = p.number ?? r.number; r.api = p.stats || r.api; r.pos = p.head?.position || r.pos;
+      r.seen = now; r.seenClock = s.game_clock;   // when a player drops out: lets MVP rules tell "left mid-match" from "left at the whistle"
       if (p.possession) { cur = p.name; curPos = r.pos; }
+      // possession sticks to the last player to touch the disc; holding_left/right === 'disc' is the disc actually in hand
+      if (p.holding_left === 'disc' || p.holding_right === 'disc') { inHand = p.name; handPos = r.pos; }
     }
     const status = s.game_status, pts = (s.blue_points || 0) + (s.orange_points || 0), discSpeed = len(s.disc?.velocity);
 
@@ -189,19 +199,25 @@ const mvp = (() => {
       if (prev.status === 'round_start' && status === 'playing') joustPending = true;
       else if (status !== 'playing') joustPending = false;
       if (joustPending && cur) { rows.get(cur).d.joustswon++; joustPending = false; }   // first possession after round start
-      // clear: release from own half, disc moving fast toward the opponent end
-      if (prev.holder && !cur && status === 'playing' && discSpeed > 4) {
-        const r = rows.get(prev.holder), z = (prev.pos || [0, 0, 0])[2], vz = s.disc?.velocity?.[2] || 0;
+      // clear: the disc leaves a hand in the thrower's own half and flies fast toward the opponent end
+      // (blue defends -z). The disc's velocity can lag the release by a tick or two, so look for a few ticks.
+      if (prev.inHand && !inHand) clearCheck = { name: prev.inHand, z: (prev.handPos || [0, 0, 0])[2], ticks: 0 };
+      if (clearCheck && (inHand || status !== 'playing' || ++clearCheck.ticks > 5)) clearCheck = null;
+      if (clearCheck && discSpeed > 4) {
+        const r = rows.get(clearCheck.name), vz = s.disc?.velocity?.[2] || 0, z = clearCheck.z;
         if (r && (r.team === 'blue' ? z < 0 && vz > 0 : z > 0 && vz < 0)) r.d.clears++;
+        clearCheck = null;
       }
     }
-    if (cur !== (poss && poss.name)) { endPossession(now); if (cur) poss = { name: cur, since: now }; }
-    prev = { pts, status, holder: cur, pos: curPos };
+    // Greedy only counts while the game clock runs: after a goal (or any pause) the clock stops and holding the disc is free.
+    if (poss && prev && s.game_clock !== prev.clock) poss.held += (now - prev.at) / 1000;
+    if (cur !== (poss && poss.name)) { endPossession(); if (cur) poss = { name: cur, held: 0 }; }
+    prev = { pts, status, holder: cur, pos: curPos, inHand, handPos, clock: s.game_clock, at: now };
 
     const list = [...rows.values()].map(r => {
-      const st = statsOf(r, now);
+      const st = statsOf(r);
       const all = awardsMeta.map(a => ({ name: a.name, label: a.label, stat: a.stat, value: st[a.stat] || 0, score: r1((st[a.stat] || 0) * a.multiplier), derived: a.derived, approx: a.approx }));
-      return { name: r.name, team: r.team, number: r.number, total: r1(all.reduce((n, a) => n + a.score, 0)),
+      return { name: r.name, team: r.team, number: r.number, total: r1(all.reduce((n, a) => n + a.score, 0)), stats: st, seenAgo: r1((now - r.seen) / 1000), seenClock: r.seenClock ?? null,
         awards: all.filter(a => a.score > 0).sort((x, y) => y.score - x.score).slice(0, maxShown) };
     }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
     cache = { sessionid: sid, mvp: pickMvp(list, s), players: list, awardsMeta };
@@ -209,6 +225,10 @@ const mvp = (() => {
 
   return { observe, state: () => cache };
 })();
+
+/* ---------------- MVP verification ---------------- */
+// At post_match, compares the prediction with the game's real MVP (OCR) and logs it to mvp-log.jsonl. See mvp-verify.mjs.
+const verifier = createVerifier({ dataDir: DATA_DIR, awardsMeta: mvp.state().awardsMeta, getPrediction: () => mvp.state(), echoBase: `http://${ECHO_HOST}:6721` });
 
 /* ---------------- HTTP ---------------- */
 const json = (res, status, body) => {
@@ -226,6 +246,7 @@ const server = http.createServer(async (req, res) => {
   if (url === '/api/autoclip' && req.method === 'POST') { autoclip.update(await readBody(req)); return json(res, 200, autoclip.state()); }
   if (url === '/api/autoclip/test' && req.method === 'POST') { autoclip.test(); return json(res, 200, autoclip.state()); }
   if (url === '/api/mvp') return json(res, 200, mvp.state());
+  if (url === '/api/mvp-log') return json(res, 200, verifier.state());
   // Static files from public/ by name; the resolved path must stay inside it.
   let rel; try { rel = decodeURIComponent(url); } catch { return res.writeHead(400).end(); }
   if (rel === '/') rel = '/index.html';

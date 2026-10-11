@@ -80,6 +80,7 @@ body.live #hud { opacity: 1; }
 /* ---------- MVP card ---------- */
 .mvp { position: absolute; right: var(--edge); bottom: var(--edge); width: calc(var(--u) * 20); padding: calc(var(--u) * .7) calc(var(--u) * .9); display: grid; gap: calc(var(--u) * .35); border-top: calc(var(--u) * .18) solid var(--muted); }
 .mvp.blue { border-top-color: var(--blue); } .mvp.orange { border-top-color: var(--orange); }
+.mvp > * { min-width: 0; }   /* grid items default to min-width: auto, so a long name would widen the card past the screen edge */
 .mvp .k { display: flex; justify-content: space-between; font: 600 calc(var(--u) * .62)/1 var(--f-display); letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
 .mvp .nm { display: flex; align-items: baseline; justify-content: space-between; gap: calc(var(--u) * .6); }
 .mvp .who { font: 700 calc(var(--u) * 1.5)/1.1 var(--f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -94,19 +95,20 @@ body.live #hud { opacity: 1; }
 .thr b.blue { color: var(--blue); } .thr b.orange { color: var(--orange); }
 .thr em { font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ---------- toasts ---------- */
-.toasts { position: absolute; top: calc(var(--edge) + var(--u) * 6); left: 50%; transform: translateX(-50%); display: grid; justify-items: center; gap: calc(var(--u) * .4); }
-.toast { padding: calc(var(--u) * .45) calc(var(--u) * 1.1); font: 600 calc(var(--u) * 1.05)/1.2 var(--f-display); letter-spacing: .06em; white-space: nowrap; border-left: calc(var(--u) * .2) solid var(--muted); animation: in .25s ease-out; }
-.toast.blue { border-left-color: var(--blue); } .toast.orange { border-left-color: var(--orange); }
-.toast.clip { border-left-color: var(--warn); font-size: calc(var(--u) * .9); }
-.toast.clip.done { border-left-color: var(--good); }
+/* ---------- event feed (top left; outside #hud so it also shows between matches) ---------- */
+.toasts { position: fixed; top: var(--edge); left: var(--edge); width: calc(var(--u) * 22); display: grid; justify-items: start; gap: calc(var(--u) * .35); }
+.toast { max-width: 100%; display: grid; gap: calc(var(--u) * .15); padding: calc(var(--u) * .45) calc(var(--u) * .8); font: 600 calc(var(--u) * .95)/1.2 var(--f-body); letter-spacing: 0; border-left: calc(var(--u) * .2) solid var(--muted); animation: in .25s ease-out; }
+.toast .k { font: 600 calc(var(--u) * .62)/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.toast .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toast .d { font: 500 calc(var(--u) * .78)/1.2 var(--f-body); color: var(--muted); letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toast.blue { border-left-color: var(--blue); } .toast.blue .k { color: var(--blue); }
+.toast.orange { border-left-color: var(--orange); } .toast.orange .k { color: var(--orange); }
+.toast.good { border-left-color: var(--good); } .toast.good .k { color: var(--good); }
+.toast.warn { border-left-color: var(--warn); } .toast.warn .k { color: var(--warn); }
+.toast.bad { border-left-color: var(--bad); } .toast.bad .k { color: var(--bad); }
 .toast .em { color: var(--warn); }
-.toast.out { opacity: 0; transition: opacity .4s; }
-@keyframes in { from { opacity: 0; transform: translateY(calc(var(--u) * -.6)); } }
-
-/* ---------- offline chip ---------- */
-.chip { position: fixed; left: var(--edge); top: var(--edge); padding: calc(var(--u) * .35) calc(var(--u) * .7); font: 500 calc(var(--u) * .8) var(--f-mono); color: var(--muted); opacity: 0; transition: opacity .6s; }
-.chip.show { opacity: .9; }
+.toast.out { opacity: 0; transform: translateX(calc(var(--u) * -.8)); transition: opacity .4s, transform .4s; }
+@keyframes in { from { opacity: 0; transform: translateX(calc(var(--u) * -.8)); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -120,7 +122,6 @@ body.live #hud { opacity: 1; }
     <div class="mid"><div class="clock" id="clock">05:00</div><div class="status" id="status">—</div></div>
     <div class="side orange" id="sOrange"><span class="poss"></span><span class="pts" id="ptsOrange">0</span><span class="tname">Orange</span></div>
   </div>
-  <div class="toasts" id="toasts"></div>
   <div class="roster blue" id="rosBlue"></div>
   <div class="roster orange" id="rosOrange"></div>
   <div class="radarbox glass"><canvas id="radar"></canvas></div>
@@ -132,7 +133,7 @@ body.live #hud { opacity: 1; }
     <div class="thr"><b id="thrV">—</b><span>m/s</span><em id="thrBy">no throws yet</em></div>
   </div>
 </div>
-<div class="chip glass" id="chip"></div>
+<div class="toasts" id="toasts"></div>
 
 <script>
 'use strict';
@@ -153,25 +154,44 @@ const pPos = p => (p.head && p.head.position) || p.position || [0, 0, 0];
 const pFwd = p => (p.head && p.head.forward) || p.forward || [0, 0, 1];
 let swap = false; try { swap = localStorage.getItem('echo-swap') === '1'; } catch {}
 
-const S = { cur: null, prev: null, live: false, lastLive: 0, disp: {}, disc: null, trail: [], throw: null, ac: { lastId: null, fireAt: 0 } };
+const S = { cur: null, prev: null, live: false, lastLive: 0, disp: {}, disc: null, trail: [], throw: null, ac: { lastId: null, fireAt: 0 },
+  conn: null, sid: null, joinedAt: 0 };   // conn: server_down | echo_unreachable | not_in_match | live
 
-/* ---------- offline chip ---------- */
-let chipT = 0, chipMsg = '';
-function chip(msg) {
-  if (msg === chipMsg) return;
-  chipMsg = msg; const el = $('chip');
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(chipT); chipT = setTimeout(() => el.classList.remove('show'), 4500);
-}
-
-/* ---------- toasts ---------- */
+/* ---------- event feed ---------- */
+// toast() takes raw HTML; note() builds the usual kicker / title / detail card from plain text.
 function toast(html, cls = '', ms = 5500) {
   const el = document.createElement('div');
   el.className = `toast glass ${cls}`; el.innerHTML = html;
   $('toasts').appendChild(el);
-  while ($('toasts').children.length > 4) $('toasts').firstChild.remove();
+  while ($('toasts').children.length > 3) $('toasts').firstChild.remove();   // more would reach the roster below
   if (ms) setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); }, ms);
   return el;
+}
+const note = (kicker, title, detail = '', cls = '', ms) =>
+  toast(`<span class="k">${esc(kicker)}</span><span class="t">${esc(title)}</span>${detail ? `<span class="d">${esc(detail)}</span>` : ''}`, cls, ms);
+const humanize = s => String(s || '').replace(/^Echo_/, '').replace(/^mpl_/, '').replace(/_/g, ' ').toLowerCase();
+const teamNames = (s, t) => players(s, t).map(p => p.name);
+
+// Connection / match lifecycle: game loaded, joined or left a match, server down.
+function lifecycle(conn, s) {
+  const was = S.conn; S.conn = conn;
+  if (conn === 'live') {
+    if (s.sessionid !== S.sid) {
+      S.sid = s.sessionid; S.joinedAt = performance.now();
+      const n = teamNames(s, 0).length + teamNames(s, 1).length;
+      const spec = (s.teams?.[2]?.players || []).some(p => p.name === s.client_name);
+      note(spec ? 'Spectating' : 'Joined match', `${humanize(s.match_type) || 'match'} · ${humanize(s.map_name)}`,
+        `${s.private_match ? 'private' : 'public'} · ${n} players · ${s.blue_points ?? 0}–${s.orange_points ?? 0}`, 'good', 7000);
+    }
+    return;
+  }
+  if (conn === was) return;
+  if (was === 'live') S.sid = null;
+  if (was === 'server_down') for (const el of $('toasts').querySelectorAll('.toast.bad')) el.remove();
+  const fresh = was === null || was === 'server_down';
+  if (conn === 'server_down') note('Offline', 'Scoreboard server not running', '', 'bad', 0);
+  else if (conn === 'echo_unreachable') note(fresh ? 'Waiting' : 'Echo VR', fresh ? 'Waiting for Echo VR…' : 'Echo VR closed', '', 'warn');
+  else if (conn === 'not_in_match') was === 'live' ? note('Left match', 'Back in the lobby') : note('Echo VR', 'Game loaded · not in a match', '', 'good');
 }
 
 /* ---------- session ---------- */
@@ -192,10 +212,24 @@ function detect(prev, s) {
     const ls = s.last_score || {};
     const team = (s.blue_points || 0) > (prev.blue_points || 0) ? 'blue' : 'orange';
     const who = ls.person_scored && ls.person_scored !== '[INVALID]' ? ls.person_scored : team;
-    const type = ls.goal_type && !/NO GOAL/i.test(ls.goal_type) ? ` · ${esc(ls.goal_type.toLowerCase())}` : '';
-    toast(`GOAL · ${esc(who)}${ls.point_amount ? ` · ${ls.point_amount} pts` : ''}${type}`, team);
+    const type = ls.goal_type && !/NO GOAL/i.test(ls.goal_type) ? ` · ${esc(humanize(ls.goal_type))}` : '';
+    toast(`<span class="k">Goal · ${team}</span><span class="t">${esc(who)}${ls.point_amount ? ` · ${ls.point_amount} pts` : ''}${type}</span><span class="d">${s.blue_points ?? 0}–${s.orange_points ?? 0} · ${esc((s.game_clock_display || '').split('.')[0])} left</span>`, team);
     const el = $(team === 'blue' ? 'sBlue' : 'sOrange');
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  }
+  // Roster changes; skipped right after joining, while everyone is still loading in.
+  if (performance.now() - S.joinedAt > 4000) for (const t of [0, 1]) {
+    const before = teamNames(prev, t), now = teamNames(s, t);
+    for (const n of now) if (!before.includes(n)) note(`Joined ${TEAMS[t]}`, n, '', TEAMS[t], 4000);
+    for (const n of before) if (!now.includes(n) && !teamNames(s, 1 - t).includes(n)) note('Left', n, '', '', 4000);
+  }
+  if (s.game_status !== prev.game_status) {
+    if (s.game_status === 'sudden_death') note('Overtime', 'Next goal wins', '', 'warn');
+    if (s.game_status === 'post_match' || s.game_status === 'post_sudden_death') {
+      const b = s.blue_points ?? 0, o = s.orange_points ?? 0, w = b === o ? '' : b > o ? 'blue' : 'orange';
+      note(s.game_status === 'post_sudden_death' ? 'Final · OT' : 'Final',
+        w ? `${w === 'blue' ? 'Blue' : 'Orange'} wins ${Math.max(b, o)}–${Math.min(b, o)}` : `Draw ${b}–${o}`, '', w, 9000);
+    }
   }
 }
 
@@ -234,16 +268,16 @@ async function pollSession() {
       if (!S.live) { S.disp = {}; S.trail = []; S.prev = null; }
       S.live = true; S.lastLive = performance.now();
       S.prev = S.cur; S.cur = s;
-      document.body.classList.add('live'); chipMsg = ''; $('chip').classList.remove('show');
-      detect(S.prev, s); render(s);
+      document.body.classList.add('live');
+      lifecycle('live', s); detect(S.prev, s); render(s);
       next = 60;
     } else {
       S.live = false; document.body.classList.remove('live'); S.cur = null;
-      chip(s._offline === 'not_in_match' ? 'Echo: not in a match' : s._offline === 'echo_unreachable' ? 'Echo API not reachable' : 'Scoreboard server error');
+      lifecycle(s._offline === 'not_in_match' ? 'not_in_match' : s._offline === 'echo_unreachable' ? 'echo_unreachable' : 'server_down');
     }
   } catch {
     S.live = false; document.body.classList.remove('live'); S.cur = null;
-    chip('Scoreboard server not running');
+    lifecycle('server_down');
   }
   setTimeout(pollSession, next);
 }
@@ -273,7 +307,7 @@ async function pollClip() {
     const st = await (await fetch('/api/autoclip', { cache: 'no-store' })).json();
     if (st.pending) {
       S.ac.fireAt = performance.now() + st.pending.fireIn;
-      if (!clipEl) clipEl = toast('', 'clip', 0);
+      if (!clipEl) clipEl = toast('', 'warn', 0);
       clipEl._reasons = st.pending.reasons.join(' + ');
     } else S.ac.fireAt = 0;
     if (!st.pending && clipEl) { clipEl.remove(); clipEl = null; }
@@ -281,14 +315,14 @@ async function pollClip() {
     if (S.ac.lastId === null) S.ac.lastId = newest ? newest.id : 0;
     else if (newest && newest.id > S.ac.lastId) {
       for (const e of st.log.filter(e => e.id > S.ac.lastId).reverse())
-        toast(e.ok ? `Clipped <span class="em">${esc(e.key)}</span>` : 'Clip failed', 'clip done', 3500);
+        e.ok ? note('Clipped', `${e.player || 'Clip'} · ${(e.reasons || []).map(humanize).join(' + ')}`, `saved with ${e.key}`, 'good', 4000) : note('Clip', 'Clip failed', '', 'bad', 4000);
       S.ac.lastId = newest.id;
     }
   } catch {}
   setTimeout(pollClip, 400);
 }
 function clipTick() {
-  if (clipEl && S.ac.fireAt) clipEl.innerHTML = `Clipping in <span class="em">${Math.max(0, (S.ac.fireAt - performance.now()) / 1000).toFixed(0)}s</span>… <span style="opacity:.6;font-weight:500">${esc(clipEl._reasons || '')}</span>`;
+  if (clipEl && S.ac.fireAt) clipEl.innerHTML = `<span class="k">Clipping</span><span class="t">in <span class="em">${Math.max(0, (S.ac.fireAt - performance.now()) / 1000).toFixed(0)}s</span></span><span class="d">${esc(humanize(clipEl._reasons || ''))}</span>`;
 }
 
 /* ---------- Radar (ported from index.html) ---------- */
