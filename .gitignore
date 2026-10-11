@@ -1,3 +1,6 @@
 node_modules/
 dist/
 autoclip.json
+mvp-log.jsonl
+captures/
+probe/

@@ -234,6 +234,9 @@ select:focus-visible, input:focus-visible { outline: 2px solid var(--blue); outl
 .mchips { display: flex; gap: 6px; flex-wrap: wrap; }
 .mchips span { font: 11px var(--f-mono); padding: 3px 7px; border: 1px solid var(--line-hi); background: var(--panel-2); white-space: nowrap; }
 .mchips span i { font-style: normal; color: var(--muted); }
+.mvpw .verify { padding: 9px 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); display: flex; gap: 6px 16px; flex-wrap: wrap; }
+.mvpw .verify b { color: var(--fg); font-weight: 600; }
+.mvpw .verify .ok { color: var(--good); } .mvpw .verify .bad { color: var(--bad); }
 .mvpw .note { padding: 10px 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 @media (max-width: 640px) { .mvpw td.hide-s { display: none; } }
 
@@ -366,6 +369,7 @@ select:focus-visible, input:focus-visible { outline: 2px solid var(--blue); outl
       <h2><span>MVP watch</span><span id="mvpCount"></span></h2>
       <div class="mvp-top"><span class="lbl">Predicted MVP</span><span class="who" id="mvpWho">—</span><span class="tot" id="mvpTot"></span><div class="mchips" id="mvpAw"></div></div>
       <table><tbody id="mvpRows"><tr><td class="empty">Waiting for a live match…</td></tr></tbody></table>
+      <div class="verify" id="mvpVerify">Verified vs game: —</div>
       <div class="note">Prediction based on the game's award multipliers (from <code>player_rewards.json</code>), not the official MVP rule. ≈ marks derived or unreliable stats: three-pointers, bounce goals, jousts, clears, longest possession, and interceptions (the API under-reports them). Players who leave stay listed until the next match.</div>
     </div>
   </section>
@@ -1050,11 +1054,27 @@ async function mvpPoll() {
   setTimeout(mvpPoll, 700);
 }
 
+const reasonText = { no_mvp_screen_for_spectators: 'spectators get no MVP screen', camera_not_aimed: 'could not move the spectator camera', echo_not_visible: 'Echo window not capturable', mvp_not_found_in_ocr: 'no MVP found on screen' };
+async function mvpLogPoll() {
+  try {
+    const d = await (await fetch('/api/mvp-log', { cache: 'no-store' })).json(), sm = d.summary, e = d.entries[0];
+    let h = sm.verified ? `Verified vs game: <b>${sm.correct}/${sm.verified}</b> correct${sm.accuracy != null ? ` (${sm.accuracy}%)` : ''}` : `Verified vs game: <b>0/0</b> (${sm.matches} logged)`;
+    if (e) {
+      const a = e.actual || {};
+      h += a.mvp ? `<span>Last: predicted ${esc(e.predicted.mvp || '—')}, game ${esc(a.mvp)} <b class="${e.correct ? 'ok' : 'bad'}">${e.correct ? '✓' : '✗'}</b></span>`
+        : `<span>Last: predicted ${esc(e.predicted.mvp || '—')}, not verified (${esc(reasonText[a.reason] || a.reason || 'unknown')})</span>`;
+    }
+    $('mvpVerify').innerHTML = h;
+  } catch {}
+  setTimeout(mvpLogPoll, 10000);
+}
+
 /* ============================================================
    Boot
    ============================================================ */
 acPoll();
 mvpPoll();
+mvpLogPoll();
 updateFoot();
 poll();
 requestAnimationFrame(frame);
