@@ -387,8 +387,10 @@ function drawDisc(v) {
 }
 
 let lastFrame = performance.now();
+const FRAME_MS = 1000 / 30;   // Echo's data arrives at ~15 Hz and is interpolated, so 30 fps is plenty over the game
 function frame(now) {
   requestAnimationFrame(frame);
+  if (now - lastFrame < FRAME_MS - 2) return;
   clipTick();
   const dt = Math.min(.1, (now - lastFrame) / 1000); lastFrame = now;
   if (!S.live) return;
