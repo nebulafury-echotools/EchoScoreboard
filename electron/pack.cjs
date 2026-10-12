@@ -17,5 +17,10 @@ const fs = require('node:fs');
     ...(fs.existsSync(icon) ? { icon } : {}),
     ignore: [/^\/dist($|\/)/, /^\/\.claude($|\/)/, /^\/\.git($|\/)/, /^\/\.gitattributes$/, /^\/autoclip\.json$/, /^\/mvp-log\.jsonl$/, /^\/captures($|\/)/, /^\/probe($|\/)/, /^\/tools\/probe-/,/^\/README\.md$/, /^\/mvp-awards\.json\.bak$/],
   });
+  // The UI is English only: drop Chromium's other UI translations (~47 MB of the ~48 MB locales folder).
+  for (const dir of out) {
+    const loc = path.join(dir, 'locales');
+    for (const f of fs.existsSync(loc) ? fs.readdirSync(loc) : []) if (f !== 'en-US.pak') fs.rmSync(path.join(loc, f));
+  }
   console.log('Packaged:', out.join(', '));
 })().catch(e => { console.error(e); process.exit(1); });

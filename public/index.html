@@ -685,7 +685,9 @@ function arenaPath(v) {
 }
 
 let lastFrame = performance.now();
+const FRAME_MS = 1000 / 30;   // the arena map interpolates ~15 Hz data; 30 fps looks the same as 144 Hz for far less work
 function frame(now) {
+  if (now - lastFrame < FRAME_MS - 2) { requestAnimationFrame(frame); return; }
   const dt = Math.min(.1, (now - lastFrame) / 1000); lastFrame = now;
   const k = 1 - Math.exp(-dt * 14);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -1020,7 +1022,7 @@ function acRender(st) {
     const left = Math.max(0, AC.fireAt - performance.now());
     bar.style.width = (100 - left / AC.total * 100).toFixed(1) + '%';
     if (AC.st && AC.st.pending) $('acState').textContent = `Clipping ${AC.st.pending.reasons.join(' + ')} in ${(left / 1000).toFixed(1)}s`;
-  } else bar.style.width = '0';
+  } else if (bar.style.width !== '0px') bar.style.width = '0';   // idle: don't touch the style every frame
   requestAnimationFrame(acTick);
 })();
 
